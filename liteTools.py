@@ -126,7 +126,7 @@ class RT:
         a = timeRange[0]
         b = timeRange[1]
         sleepTime = random.uniform(a, b)
-        LL.log(0, '程序正在暂停%.3f秒'%sleepTime)
+        LL.log(0, '程序正在暂停%.3f秒' % sleepTime)
         time.sleep(sleepTime)
 
     @staticmethod
@@ -137,7 +137,7 @@ class RT:
             random.choices('0123456789ABCDEF', k=x))  # 指定长度随机Hex字符串生成
         deviceId = "-".join([ranHex(8), ranHex(4), ranHex(4),
                             ranHex(4), ranHex(12)])  # 拼合字符串
-        random.seed(str(time.time()), version=2) # 随机化种子(避免影响到其他随机功能)
+        random.seed(str(time.time()), version=2)  # 随机化种子(避免影响到其他随机功能)
         return deviceId
 
 
@@ -227,9 +227,8 @@ class CT:
     charset = 'utf-8'
 
     @staticmethod
-    def encrypt_BodyString(text):
+    def encrypt_BodyString(text, key=b"ytUQ7l2ZZu8mLvJZ"):
         """BodyString加密"""
-        key = b"ytUQ7l2ZZu8mLvJZ"
         iv = b'\x01\x02\x03\x04\x05\x06\x07\x08\t\x01\x02\x03\x04\x05\x06\x07'
         cipher = AES.new(key, AES.MODE_CBC, iv)
 
@@ -240,12 +239,39 @@ class CT:
         return text
 
     @staticmethod
-    def decrypt_BodyString(text):
+    def decrypt_BodyString(text, key=b"ytUQ7l2ZZu8mLvJZ"):
         """BodyString解密"""
         key = b"ytUQ7l2ZZu8mLvJZ"
         iv = b'\x01\x02\x03\x04\x05\x06\x07\x08\t\x01\x02\x03\x04\x05\x06\x07'
         cipher = AES.new(key, AES.MODE_CBC, iv)
 
+        text = base64.b64decode(text)  # Base64解码
+        text = cipher.decrypt(text)  # 解密
+        text = text.decode(CT.charset)  # 解码
+        text = CT.pkcs7unpadding(text)  # 删除填充
+        return text
+
+    @staticmethod
+    def encrypt_QString(text, key=b"ytUQ7l2ZZu8mLvJZ"):
+        """BodyString加密"""
+        iv = b'\x01\x02\x03\x04\x05\x06\x07\x08\t\x01\x02\x03\x04\x05\x06\x07'
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+
+        text = CT.pkcs7padding(text)  # 填充
+        text = text.encode(CT.charset)  # 编码
+        text = cipher.encrypt(text)  # 加密
+        text = base64.b64encode(text).decode(CT.charset) # Base64编码
+        text = text.replace('/', '%2F').replace('+', '%2B') # Url不安全字符转义
+        return text
+
+    @staticmethod
+    def decrypt_QrString(text, key=b"ytUQ7l2ZZu8mLvJZ"):
+        """BodyString解密"""
+        key = b"ytUQ7l2ZZu8mLvJZ"
+        iv = b'\x01\x02\x03\x04\x05\x06\x07\x08\t\x01\x02\x03\x04\x05\x06\x07'
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+
+        text = text.replace('%2F', '/').replace('%2B', '+') # Url不安全字符转义
         text = base64.b64decode(text)  # Base64解码
         text = cipher.decrypt(text)  # 解密
         text = text.decode(CT.charset)  # 解码
